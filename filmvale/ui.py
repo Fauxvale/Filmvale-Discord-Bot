@@ -113,7 +113,7 @@ def list_line(item: Item, number: int) -> str:
         f"**{discord.utils.escape_markdown(item.display_title)}**"
     when = f"<t:{int(item.added_at.timestamp())}:d>" if item.added_at else ""
     second = f"{facts_line(item)} · added by {added_by(item)} {when}".rstrip()
-    return f"`{number:>3}` {check} {title}\n-# {second}"
+    return f"**{number}.** {check} {title}\n-# {second}"
 
 
 class OwnerView(discord.ui.View):
@@ -206,10 +206,6 @@ class WatchlistBrowser(OwnerView):
             description="\n".join(list_line(item, n) for n, item in self.page_items()),
             colour=discord.Colour.gold(),
         )
-        # Show the first poster on the page so the list never feels bare.
-        first = self.page_items()[0][1]
-        if first.poster_url:
-            embed.set_thumbnail(url=first.poster_url)
         embed.set_footer(text=footer)
         return [embed]
 

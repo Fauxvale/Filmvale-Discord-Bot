@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import discord
@@ -42,7 +43,7 @@ class Events(commands.Cog):
     @app_commands.checks.bot_has_permissions(create_events=True)
     @app_commands.describe(
         item="Watchlist entry (or paste a link to add & schedule it)",
-        when='When it starts, e.g. "friday 8pm", "2026-11-01 20:00", "tomorrow 9:30pm"',
+        when='When it starts: a Discord timestamp like <t:1793386800>, or "friday 8pm", "2026-11-01 20:00"',
         channel="Voice/stage channel to host it in (defaults to the server's event channel)",
         location="Text location instead of a channel (e.g. 'Teleparty', 'Jake's place')",
         length="Event length in minutes (defaults to runtime + 15)",
@@ -121,6 +122,22 @@ class Events(commands.Cog):
             f"📅 **{discord.utils.escape_markdown(target.display_title)}** is scheduled for "
             f"<t:{int(start.timestamp())}:F> (<t:{int(start.timestamp())}:R>).\n{event.url}"
         )
+
+    @schedule.autocomplete("when")
+    async def when_autocomplete(self, interaction: discord.Interaction, current: str):
+        """Echo back how the time will be read, so mistakes are caught before submitting."""
+        if not current.strip():
+            return []
+        settings = await self.bot.db.get_settings(interaction.guild_id)
+        parsed = parse_when(current, settings.timezone)
+        if parsed:
+            local = parsed.astimezone(ZoneInfo(settings.timezone))
+            label = f"📅 {local:%a, %b %d %Y · %I:%M %p %Z}"
+            if parsed <= utcnow():
+                label += " (in the past!)"
+        else:
+            label = "❓ Can't read that yet — try <t:1793386800> or friday 8pm"
+        return [app_commands.Choice(name=label[:100], value=current[:100])]
 
     async def _resolve_target(self, interaction: discord.Interaction, value: str) -> Item | str:
         """Find the watchlist item, adding it first if a link was pasted."""

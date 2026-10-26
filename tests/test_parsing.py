@@ -146,4 +146,7 @@ def test_parse_when():
     assert when.isoformat() == "2026-10-31T00:00:00+00:00"  # 8pm EDT = midnight UTC
     assert parse_when("2026-11-01 20:00", "UTC").isoformat() == "2026-11-01T20:00:00+00:00"
     assert parse_when("<t:1793577600:F>").timestamp() == 1793577600
+    assert parse_when("<t:1793386800>", "America/New_York").timestamp() == 1793386800  # timezone ignored
+    assert parse_when("movie night <t:1793386800:R> (friday)").timestamp() == 1793386800
+    assert parse_when("Friday, October 30, 2026 at 12:00 PM", "America/Los_Angeles").timestamp() == 1793386800
     assert parse_when("not a date at all", "UTC") is None
