@@ -28,3 +28,36 @@ async def test_crud_and_duplicates(db):
     await db.update_item(a)
     assert (await db.get_item(1, a.id)).watched
     assert await db.all_tags(1) == ["Horror"]
+
+
+async def test_stale_items_and_migration(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    import aiosqlite
+
+    from filmvale.db import SCHEMA
+
+    # A database created before metadata_at existed gets the column added on connect.
+    path = str(tmp_path / "old.db")
+    async with aiosqlite.connect(path) as conn:
+        await conn.executescript(SCHEMA.replace("event_id      INTEGER,\n    metadata_at   TEXT", "event_id      INTEGER"))
+    d = Database(path)
+    await d.connect()
+    try:
+        now = datetime.now(timezone.utc)
+        await d.add_item(Item(title="Old", guild_id=1, tmdb_id=1, metadata_at=now - timedelta(days=200)))
+        await d.add_item(Item(title="Fresh", guild_id=1, tmdb_id=2, metadata_at=now))
+        await d.add_item(Item(title="Never fetched", guild_id=1))
+        assert [i.title for i in await d.stale_tmdb_items(now - timedelta(days=150), 10)] == ["Old"]
+    finally:
+        await d.close()
+
+
+def test_purge_keeps_user_data():
+    from filmvale.cogs.refresh import purge
+
+    item = Item(title="Alien", year=1979, imdb_id="tt0078748", overview="In space…", poster_url="x",
+                rating=8.5, genres=["Horror"], runtime=117, tags=["scary"], added_by_name="alice")
+    purge(item)
+    assert (item.title, item.year, item.imdb_id, item.tags, item.added_by_name) == ("Alien", 1979, "tt0078748", ["scary"], "alice")
+    assert item.overview is item.poster_url is item.rating is item.runtime is None and item.genres == []

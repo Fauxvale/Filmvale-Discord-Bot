@@ -254,7 +254,11 @@ _LINE_PREFIX = re.compile(r"^\s*(?:[-*•]+|\d+[.)]|\[[ xX✓]?\])\s*")
 def _from_text(text: str) -> list[Item]:
     items: list[Item] = []
     section_kind = None
-    for line in text.splitlines():
+    lines = text.splitlines()
+    if lines and lines[0].startswith("FILMVALE WATCHLIST"):
+        # Our own export: skip the header block before the first "== SECTION ==" line.
+        lines = lines[next((n for n, l in enumerate(lines) if l.startswith("==")), len(lines)):]
+    for line in lines:
         if line.startswith(("    ", "\t")):
             # Indented detail lines (as in this bot's .txt export): only the link matters.
             links = find_links(line)

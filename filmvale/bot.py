@@ -24,6 +24,8 @@ COGS = (
     "filmvale.cogs.events",
     "filmvale.cogs.transfer",
     "filmvale.cogs.settings",
+    "filmvale.cogs.about",
+    "filmvale.cogs.refresh",
 )
 
 

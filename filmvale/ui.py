@@ -11,6 +11,8 @@ from .models import KIND_EMOJI, Item, utcnow
 if TYPE_CHECKING:
     from .bot import FilmvaleBot
 
+TMDB_CREDIT = "Data from TMDB"
+
 KIND_COLOURS = {
     "movie": discord.Colour.from_rgb(229, 160, 13),
     "series": discord.Colour.from_rgb(1, 180, 228),
@@ -78,7 +80,8 @@ def item_embed(item: Item, *, large_poster: bool = True, heading: str | None = N
             embed.set_image(url=item.poster_url)
         else:
             embed.set_thumbnail(url=item.poster_url)
-    embed.set_footer(text=f"#{item.id}" if item.id else "")
+    footer = [f"#{item.id}" if item.id else None, TMDB_CREDIT if item.metadata_at else None]
+    embed.set_footer(text=" · ".join(f for f in footer if f))
     return embed
 
 
@@ -99,6 +102,8 @@ def card_embed(item: Item, number: int | None = None) -> discord.Embed:
     embed.description = "\n".join(lines)
     if item.poster_url:
         embed.set_thumbnail(url=item.poster_url)
+    if item.metadata_at:
+        embed.set_footer(text=TMDB_CREDIT)
     return embed
 
 
@@ -187,6 +192,8 @@ class WatchlistBrowser(OwnerView):
         footer = f"Page {self.page + 1}/{self.pages} · {len(self.items)} items"
         if total_runtime:
             footer += f" · {total_runtime // 60}h {total_runtime % 60}m of movies"
+        if any(item.metadata_at for _, item in self.page_items()):
+            footer += f" · {TMDB_CREDIT}"
         if not self.items:
             return [discord.Embed(title=self.title, description="Nothing here yet — try `/add`.")]
         if self.cards:
@@ -290,13 +297,14 @@ class SearchPicker(OwnerView):
                 description=_truncate(r.overview, 200) or "*No description*",
                 colour=KIND_COLOURS.get(r.kind),
             )
-            if r.rating:
-                e.set_footer(text=f"⭐ {r.rating}/10 · {r.kind_label}")
+            e.set_footer(text=" · ".join(
+                b for b in (f"⭐ {r.rating}/10" if r.rating else None, r.kind_label, TMDB_CREDIT) if b
+            ))
             if r.poster_url:
                 e.set_thumbnail(url=r.poster_url)
             embeds.append(e)
         if len(self.results) > 5:
-            embeds[-1].set_footer(text=f"+{len(self.results) - 5} more in the menu below")
+            embeds[-1].set_footer(text=f"+{len(self.results) - 5} more in the menu below · {TMDB_CREDIT}")
         return embeds
 
     @discord.ui.select(placeholder="Pick the right one…")

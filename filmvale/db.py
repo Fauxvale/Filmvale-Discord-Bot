@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS items (
     added_at      TEXT    NOT NULL,
     watched       INTEGER NOT NULL DEFAULT 0,
     watched_at    TEXT,
-    event_id      INTEGER
+    event_id      INTEGER,
+    metadata_at   TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_items_guild ON items (guild_id, watched);
 
@@ -59,8 +60,11 @@ _COLUMNS = (
     "guild_id", "kind", "title", "year", "release_date", "runtime", "seasons", "episodes",
     "overview", "poster_url", "rating", "genres", "creator", "url", "imdb_id", "tmdb_id",
     "tvdb_id", "youtube_id", "tags", "added_by_id", "added_by_name", "added_at", "watched",
-    "watched_at", "event_id",
+    "watched_at", "event_id", "metadata_at",
 )
+
+# Columns added after the first release, applied to existing databases on startup.
+_MIGRATIONS = {"metadata_at": "ALTER TABLE items ADD COLUMN metadata_at TEXT"}
 
 
 @dataclass
@@ -102,6 +106,7 @@ def _row_to_item(row: aiosqlite.Row) -> Item:
         watched=bool(row["watched"]),
         watched_at=_dt(row["watched_at"]),
         event_id=row["event_id"],
+        metadata_at=_dt(row["metadata_at"]),
     )
 
 
@@ -113,6 +118,7 @@ def _item_values(item: Item) -> tuple:
         item.tvdb_id, item.youtube_id, json.dumps(item.tags), item.added_by_id,
         item.added_by_name, (item.added_at or utcnow()).isoformat(), int(item.watched),
         item.watched_at.isoformat() if item.watched_at else None, item.event_id,
+        item.metadata_at.isoformat() if item.metadata_at else None,
     )
 
 
@@ -125,6 +131,11 @@ class Database:
         self.conn = await aiosqlite.connect(self.path)
         self.conn.row_factory = aiosqlite.Row
         await self.conn.executescript(SCHEMA)
+        cur = await self.conn.execute("PRAGMA table_info(items)")
+        existing = {r["name"] for r in await cur.fetchall()}
+        for column, sql in _MIGRATIONS.items():
+            if column not in existing:
+                await self.conn.execute(sql)
         await self.conn.commit()
 
     async def close(self) -> None:
@@ -248,6 +259,15 @@ class Database:
             if row:
                 return _row_to_item(row)
         return None
+
+    async def stale_tmdb_items(self, older_than: datetime, limit: int) -> list[Item]:
+        """Entries (in any server) whose TMDB data was fetched before ``older_than``, oldest first."""
+        cur = await self.conn.execute(
+            "SELECT * FROM items WHERE metadata_at IS NOT NULL AND metadata_at < ? "
+            "ORDER BY metadata_at LIMIT ?",
+            (older_than.isoformat(), limit),
+        )
+        return [_row_to_item(r) for r in await cur.fetchall()]
 
     async def all_tags(self, guild_id: int) -> list[str]:
         cur = await self.conn.execute("SELECT tags FROM items WHERE guild_id = ?", (guild_id,))

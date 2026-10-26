@@ -104,7 +104,7 @@ def test_imdb_csv_import():
 
 def _sample_items():
     return [
-        Item(title="The Thing", kind="movie", year=1982, runtime=109, imdb_id="tt0084787",
+        Item(title="The Thing", kind="movie", year=1982, runtime=109, imdb_id="tt0084787", metadata_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
              url="https://www.imdb.com/title/tt0084787/", genres=["Horror"], tags=["halloween"],
              added_by_name="alice", added_at=datetime(2026, 10, 1, tzinfo=timezone.utc)),
         Item(title="Severance", kind="series", year=2022, seasons=2, tmdb_id=95396, watched=True,
@@ -118,7 +118,9 @@ def _sample_items():
 def test_text_export_round_trip():
     text = to_text(_sample_items(), "Test Server")
     assert "1. [ ] The Thing (1982)" in text and "[x] Severance (2022)" in text
-    back = {i.title: i for i in parse_file("export.txt", text.encode())}
+    parsed = parse_file("export.txt", text.encode())
+    assert len(parsed) == 4
+    back = {i.title: i for i in parsed}
     assert back["The Thing"].imdb_id == "tt0084787" and back["The Thing"].year == 1982
     assert back["Severance"].kind == "series" and back["Severance"].watched
     assert back["Some Video"].kind == "youtube" and back["Some Video"].youtube_id == "dQw4w9WgXcQ"

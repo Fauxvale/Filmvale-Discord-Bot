@@ -143,7 +143,9 @@ class Events(commands.Cog):
             parts.append(item.overview[:600])
         if item.link:
             parts.append(item.link)
-        return "\n\n".join(parts)[:1000]
+        description = "\n\n".join(parts)
+        credit = "\n\nData from TMDB." if item.metadata_at else ""
+        return description[: 1000 - len(credit)] + credit
 
     @schedule.error
     async def schedule_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):

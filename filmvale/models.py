@@ -14,6 +14,12 @@ KIND_LABELS = {
     "other": "Other",
 }
 
+# Fields whose values come from TMDB; refreshed (or purged) to respect TMDB's caching limit.
+TMDB_FIELDS = (
+    "title", "year", "release_date", "runtime", "seasons", "episodes", "overview",
+    "poster_url", "rating", "genres", "creator", "imdb_id", "tvdb_id",
+)
+
 KIND_EMOJI = {
     "movie": "🎬",
     "series": "📺",
@@ -65,6 +71,7 @@ class Item:
     watched: bool = False
     watched_at: datetime | None = None
     event_id: int | None = None
+    metadata_at: datetime | None = None  # when TMDB data was last fetched (TMDB terms: max 6 months cache)
 
     @property
     def display_title(self) -> str:

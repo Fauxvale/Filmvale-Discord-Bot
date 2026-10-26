@@ -20,6 +20,11 @@ def to_text(items: list[Item], server_name: str) -> str:
         "[ ] = not watched yet   [x] = watched",
         "",
     ]
+    if any(i.metadata_at for i in items):
+        lines[3:3] = [
+            "Movie & TV data from TMDB (https://www.themoviedb.org). Filmvale uses TMDB and the",
+            "TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
+        ]
     for kind in KINDS:
         group = [i for i in items if i.kind == kind]
         if not group:

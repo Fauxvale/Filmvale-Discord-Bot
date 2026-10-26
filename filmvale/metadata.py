@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 
 import aiohttp
 
-from .models import Item
+from .models import Item, utcnow
 
 log = logging.getLogger(__name__)
 
@@ -104,6 +104,10 @@ class MetadataError(Exception):
     pass
 
 
+class NotFoundError(MetadataError):
+    pass
+
+
 class Resolver:
     def __init__(self, tmdb_key: str | None, youtube_key: str | None):
         self.tmdb_key = tmdb_key
@@ -142,7 +146,7 @@ class Resolver:
                         await asyncio.sleep(float(r.headers.get("Retry-After", 1 + attempt)))
                         continue
                     if r.status == 404:
-                        raise MetadataError("Not found on TMDB.")
+                        raise NotFoundError("Not found on TMDB.")
                     if r.status != 200:
                         raise MetadataError(f"TMDB returned HTTP {r.status}.")
                     return await r.json()
@@ -188,6 +192,7 @@ class Resolver:
             imdb_id=imdb_id,
             tmdb_id=tmdb_id,
             tvdb_id=ext.get("tvdb_id") or None,
+            metadata_at=utcnow(),
         )
 
     async def tmdb_details(self, tmdb_id: int | str, kind: str) -> Item:

@@ -13,6 +13,7 @@ Filmvale is a self-hosted Discord bot for keeping a shared watchlist of movies, 
 | **Auto-add** | Links posted in configured channels (and their threads) are added automatically: IMDb, TMDB, TheTVDB, Letterboxd, YouTube videos/shorts/playlists |
 | **Movie nights** | `/schedule item:<title or link> when:"friday 8pm"` creates a Discord scheduled event with the poster as cover, length = runtime + 15 min |
 | **Export** | `/export` → human-readable `.txt` (or `.json` backup) |
+| **About** | `/about` — what Filmvale is and where its data comes from |
 | **Import** | `/import` → WatchList bot `.json`/`.zip` exports, IMDb list `.csv`, this bot's own exports, or any `.txt` with one title/link per line. Preview + confirm, merge/replace, skip/update on conflict, optional TMDB enrichment |
 
 ## Setup
@@ -31,9 +32,9 @@ Filmvale is a self-hosted Discord bot for keeping a shared watchlist of movies, 
    Set `DEV_GUILD_ID` to your server's ID so commands appear instantly (global sync can take up to an hour).
 5. **Invite it** (replace `CLIENT_ID` with the Application ID):
    ```
-   https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot+applications.commands&permissions=580817017490496
+   https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot+applications.commands&permissions=580817018539072
    ```
-   (View Channels, Send Messages (+ in threads), Embed Links, Attach Files, Read History, Add Reactions, Create Events, Send Polls.)
+   (View Channels, Send Messages (+ in threads), Embed Links, Attach Files, Read History, Add Reactions, Create Events, Send Polls, Connect — needed to host events in voice channels.)
 6. **Run**: `.venv/bin/python -m filmvale`
 7. **Configure in Discord** (requires *Manage Server*):
    - `/settings autoadd add channel:#movie-links`
@@ -46,10 +47,19 @@ Run `/watchlist export` in the original bot, download the `.json`, then `/import
 
 ## Notes
 
+- TMDB's API terms forbid caching their data for more than 6 months, so Filmvale re-fetches each entry's TMDB details once they're ~5 months old (checked every 6 hours). If a title has been removed from TMDB — or no TMDB key is configured — its cached TMDB details (description, poster, runtime, rating, genres…) are cleared once they pass 6 months; your own data (title, tags, who added it, watched status) is never touched.
 - Data lives in a single SQLite file (`filmvale.db`); each server has its own list.
 - Removing an entry is limited to whoever added it or members with *Manage Messages*. `/import` and `/settings` default to *Manage Server*; `/schedule` to *Create Events*. Server admins can change these under *Server Settings → Integrations*.
 - Discord poll limits: 10 options, 55 characters per option, 1 hour – 32 days.
 - Tests: `.venv/bin/pip install pytest pytest-asyncio && .venv/bin/python -m pytest`
+
+## Attribution
+
+<img src="filmvale/assets/tmdb_logo_short.svg" alt="TMDB logo" height="14">
+
+Movie and TV metadata and posters come from [The Movie Database (TMDB)](https://www.themoviedb.org/). Filmvale uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
+
+TMDB's license is for non-commercial use only. If you run your own copy, you need your own TMDB API key and must follow the [TMDB API Terms of Use](https://www.themoviedb.org/api-terms-of-use).
 
 ## License
 
