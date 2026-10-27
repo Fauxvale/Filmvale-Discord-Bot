@@ -22,7 +22,7 @@ def answer_text(item: Item) -> str:
     return text
 
 
-def build_poll(items: list[Item], question: str, *, hours: int = 24, multiple: bool = False) -> discord.Poll:
+def build_poll(items: list[Item], question: str, *, hours: int = 24, multiple: bool = True) -> discord.Poll:
     poll = discord.Poll(question=question[:300], duration=timedelta(hours=hours), multiple=multiple)
     for item in items[:MAX_ANSWERS]:
         poll.add_answer(text=answer_text(item), emoji=item.emoji)
@@ -42,7 +42,7 @@ class Polls(commands.Cog):
         kind="Only pick this type",
         tag="Only pick items with this tag",
         hours="How long the poll stays open (1–768 hours)",
-        multiple="Let people vote for more than one option",
+        multiple="Let people vote for more than one option (default: yes)",
         include_watched="Allow already-watched items in random picks",
     )
     @app_commands.choices(kind=KIND_CHOICES)
@@ -56,7 +56,7 @@ class Polls(commands.Cog):
         kind: app_commands.Choice[str] | None = None,
         tag: str | None = None,
         hours: app_commands.Range[int, 1, 768] = 24,
-        multiple: bool = False,
+        multiple: bool = True,
         include_watched: bool = False,
     ):
         if items:

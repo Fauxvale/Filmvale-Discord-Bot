@@ -9,7 +9,7 @@ Filmvale is a self-hosted Discord bot for keeping a shared watchlist of movies, 
 | **Watchlist** | `/add` by link or title search (visual picker with posters), `/remove`, `/watched`, `/unwatched`, `/tag add/remove` |
 | **Browse** | `/list` — paginated compact list ⇄ poster-card view, filter by type/status/tag, 6 sort orders, open any entry for full details (poster, runtime, release, rating, genres, who added it & when) |
 | **Random picks** | `/random kind:movie count:3` — with 🎲 Reroll and 📊 "Poll these" buttons |
-| **Native polls** | `/poll` — real Discord polls (not reaction embeds), random or hand-picked (`items:Alien; Up; Heat`), 1h–32 days |
+| **Native polls** | `/poll` — real Discord polls (not reaction embeds), random or hand-picked (`items:Alien; Up; Heat`), 1h–32 days, multiple votes allowed by default |
 | **Auto-add** | Links posted in configured channels (and their threads) are added automatically: IMDb, TMDB, TheTVDB, Letterboxd, YouTube videos/shorts/playlists |
 | **Movie nights** | `/schedule item:<title or link> when:"friday 8pm"` creates a Discord scheduled event with the poster as cover, length = runtime + 15 min |
 | **Export** | `/export` → human-readable `.txt` (or `.json` backup) |
