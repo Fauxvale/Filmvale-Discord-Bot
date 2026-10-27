@@ -4,7 +4,7 @@ Filmvale is a self-hosted Discord bot for keeping a shared watchlist of movies, 
 
 ## Features
 
-| | |
+| Feature | Details |
 |---|---|
 | **Watchlist** | Add by link or title search (visual picker with posters), mark watched, tag, remove |
 | **Browse** | Paginated compact list ⇄ poster-card view, filter by type/status/tag, 6 sort orders, open any entry for full details (poster, runtime, release, rating, genres, who added it & when) |
@@ -95,7 +95,7 @@ In a channel set up with `/settings autoadd add`, just post a link. Filmvale rea
 
 ### Configuration (`.env`)
 
-| Variable | |
+| Variable | Description |
 |---|---|
 | `DISCORD_TOKEN` | **Required.** The bot token |
 | `TMDB_API_KEY` | Strongly recommended. TMDB v3 API key or v4 read access token |
