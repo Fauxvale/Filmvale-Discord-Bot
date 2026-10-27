@@ -1,3 +1,5 @@
+<p align="center"><img src="art/filmvale-banner.png" alt="Filmvale — your server's watchlist" width="680"></p>
+
 # Filmvale
 
 Filmvale is a self-hosted Discord bot for keeping a shared watchlist of movies, series, YouTube videos and anything else, inspired by [WatchList](https://www.watchlistbot.com/).
@@ -74,6 +76,7 @@ In a channel set up with `/settings autoadd add`, just post a link. Filmvale rea
 1. **Create the bot** at <https://discord.com/developers/applications> → *New Application* → *Bot*:
    - *Reset Token* and copy it.
    - Under *Privileged Gateway Intents* enable **Message Content Intent** (needed for auto-add).
+   - *(Optional)* Upload [`art/filmvale-icon.png`](art/filmvale-icon.png) as the *App Icon* (General Information) and [`art/filmvale-banner.png`](art/filmvale-banner.png) as the *Banner* (Bot). SVG sources are in [`art/`](art/).
 2. **Get a TMDB key** (free) at <https://www.themoviedb.org/settings/api>. Either the v3 API key or v4 read token works. Without it, movie/TV links are stored with no metadata and title search is disabled — IMDb blocks scraping, so this key is effectively required.
 3. *(Optional)* A **YouTube Data API v3** key adds video runtimes, upload dates and descriptions. Titles, channels and thumbnails work without it.
 4. **Install & configure** (Python 3.10+)

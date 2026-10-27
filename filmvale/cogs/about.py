@@ -13,6 +13,36 @@ from ..bot import FilmvaleBot
 TMDB_LOGO = Path(__file__).resolve().parent.parent / "assets" / "tmdb_logo.png"
 TMDB_NOTICE = "Filmvale uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
 REPO_URL = "https://github.com/Fauxvale/Filmvale-Discord-Bot"
+COMMANDS = [
+    (
+        "Watchlist",
+        "`/add` add by link or title search\n"
+        "`/list` browse with posters and details\n"
+        "`/info` full details for one entry\n"
+        "`/random` pick something to watch\n"
+        "`/watched` · `/unwatched` mark entries\n"
+        "`/remove` remove an entry\n"
+        "`/tag add` · `/tag remove` organise with tags",
+    ),
+    (
+        "Polls & movie nights",
+        "`/poll` start a Discord poll from the list\n"
+        "`/schedule` create a scheduled event for a movie night",
+    ),
+    (
+        "Import & export",
+        "`/export` download the list as .md, .txt or .json\n"
+        "`/import` bring in a WatchList bot export, IMDb CSV or text list",
+    ),
+    (
+        "Settings (Manage Server)",
+        "`/settings show` current settings\n"
+        "`/settings autoadd add` · `/settings autoadd remove` channels where posted links are added automatically\n"
+        "`/settings timezone` timezone for `/schedule` times\n"
+        "`/settings event-channel` default voice channel for events",
+    ),
+    ("Other", "`/about` this message"),
+]
 
 
 class About(commands.Cog):
@@ -25,14 +55,13 @@ class About(commands.Cog):
         embed = discord.Embed(
             title="🎞️ Filmvale",
             url=REPO_URL,
-            description=(
-                "A shared watchlist for movies, series and YouTube.\n"
-                "`/add` · `/list` · `/random` · `/poll` · `/schedule` · `/export` · `/import`"
-            ),
+            description="A shared watchlist for movies, series, YouTube and anything else.",
             colour=discord.Colour.from_rgb(1, 180, 228),
         )
         if me and me.display_avatar:
             embed.set_thumbnail(url=me.display_avatar.url)
+        for name, value in COMMANDS:
+            embed.add_field(name=name, value=value, inline=False)
         embed.add_field(
             name="Data sources",
             value=(
