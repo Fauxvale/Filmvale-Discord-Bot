@@ -12,7 +12,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from ..bot import KIND_CHOICES, FilmvaleBot
-from ..exporters import to_json, to_text
+from ..exporters import to_json, to_markdown, to_text
 from ..importers import ImportFormatError, parse_file
 from ..metadata import MetadataError, MediaLink
 from ..models import KIND_LABELS, Item, utcnow
@@ -33,15 +33,16 @@ class Transfer(commands.Cog):
 
     # ── /export ──────────────────────────────────────────────────────────
 
-    @app_commands.command(description="Download the watchlist as a readable .txt (or a .json backup).")
+    @app_commands.command(description="Download the watchlist as a readable .md or .txt (or a .json backup).")
     @app_commands.guild_only()
     @app_commands.describe(
-        format="txt = human-readable list, json = full backup that can be re-imported",
+        format="md = formatted list (default), txt = plain list, json = full backup for re-importing",
         status="Which entries to include",
         kind="Only export one type",
     )
     @app_commands.choices(
         format=[
+            app_commands.Choice(name="Markdown (.md)", value="md"),
             app_commands.Choice(name="Plain text (.txt)", value="txt"),
             app_commands.Choice(name="JSON backup (.json)", value="json"),
         ],
@@ -59,7 +60,7 @@ class Transfer(commands.Cog):
         status: app_commands.Choice[str] | None = None,
         kind: app_commands.Choice[str] | None = None,
     ):
-        fmt = format.value if format else "txt"
+        fmt = format.value if format else "md"
         watched = {"all": None, "unwatched": False, "watched": True}[status.value if status else "all"]
         items = await self.bot.db.list_items(
             interaction.guild_id, kind=kind.value if kind else None, watched=watched, sort="title"
@@ -68,7 +69,10 @@ class Transfer(commands.Cog):
             await interaction.response.send_message("Nothing to export.", ephemeral=True)
             return
         name = interaction.guild.name
-        body = to_text(items, name) if fmt == "txt" else to_json(items, interaction.guild_id)
+        if fmt == "json":
+            body = to_json(items, interaction.guild_id)
+        else:
+            body = (to_markdown if fmt == "md" else to_text)(items, name)
         filename = f"watchlist-{_safe_filename(name)}-{utcnow():%Y%m%d}.{fmt}"
         await interaction.response.send_message(
             f"📤 Exported **{len(items)}** entries.",
@@ -81,7 +85,7 @@ class Transfer(commands.Cog):
     @app_commands.guild_only()
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(
-        file="WatchList bot .json/.zip export, IMDb .csv export, this bot's .json/.txt export, or a .txt list",
+        file="WatchList bot .json/.zip, IMDb .csv, a Filmvale export, or a .txt/.md list",
         mode="merge = add to the current list, replace = wipe the current list first",
         on_conflict="What to do when an entry is already on the list (merge mode)",
         enrich="Fill in missing posters/runtimes/genres from TMDB/YouTube (slower)",

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from filmvale.exporters import to_json, to_text
+from filmvale.exporters import to_json, to_markdown, to_text
 from filmvale.importers import parse_date, parse_file, parse_runtime
 from filmvale.metadata import find_links, parse_link
 from filmvale.models import Item
@@ -125,6 +125,22 @@ def test_text_export_round_trip():
     assert back["Severance"].kind == "series" and back["Severance"].watched
     assert back["Some Video"].kind == "youtube" and back["Some Video"].youtube_id == "dQw4w9WgXcQ"
     assert back["Untitled Thing"].kind == "other"
+
+
+def test_markdown_export_round_trip():
+    items = _sample_items()
+    items[0].title = "The [Thing]*"
+    text = to_markdown(items, "Test Server")
+    assert "## 🎬 Movies (1)" in text
+    assert "- [ ] **[The \\[Thing\\]\\*](<https://www.imdb.com/title/tt0084787/>)** (1982)" in text
+    assert "- [x] **[Severance](<https://www.themoviedb.org/tv/95396>)** (2022)" in text
+    parsed = parse_file("export.md", text.encode())
+    assert len(parsed) == 4
+    back = {i.title: i for i in parsed}
+    assert back["The [Thing]*"].imdb_id == "tt0084787" and back["The [Thing]*"].year == 1982
+    assert back["Severance"].kind == "series" and back["Severance"].watched
+    assert back["Some Video"].kind == "youtube" and back["Some Video"].youtube_id == "dQw4w9WgXcQ"
+    assert back["Untitled Thing"].kind == "other" and back["Untitled Thing"].year == 2019
 
 
 def test_json_export_round_trip():

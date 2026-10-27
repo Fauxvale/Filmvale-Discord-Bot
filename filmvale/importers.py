@@ -249,6 +249,17 @@ def _from_csv(text: str) -> list[Item]:
 # ── Plain text ───────────────────────────────────────────────────────────
 
 _LINE_PREFIX = re.compile(r"^\s*(?:[-*•]+|\d+[.)]|\[[ xX✓]?\])\s*")
+_MD_LINK = re.compile(r"\[((?:\\.|[^\]\\])*)\]\(<?([^>)\s]+)>?\)")
+_MD_ESCAPE = re.compile(r"\\([\\`*_\[\]<>#|~])")
+
+
+def _attach_link(item: Item, link) -> None:
+    item.url = link.url
+    item.imdb_id = link.value if link.source == "imdb" else None
+    if link.source.startswith("youtube"):
+        item.youtube_id, item.kind = link.value, "youtube"
+    elif link.hint:
+        item.kind = link.hint
 
 
 def _from_text(text: str) -> list[Item]:
@@ -256,30 +267,37 @@ def _from_text(text: str) -> list[Item]:
     section_kind = None
     lines = text.splitlines()
     if lines and lines[0].startswith("FILMVALE WATCHLIST"):
-        # Our own export: skip the header block before the first "== SECTION ==" line.
+        # Our own .txt export: skip the header block before the first "== SECTION ==" line.
         lines = lines[next((n for n, l in enumerate(lines) if l.startswith("==")), len(lines)):]
+    elif lines and lines[0].startswith("# Filmvale Watchlist"):
+        # Our own .md export: skip the header block before the first "## Section" line.
+        lines = lines[next((n for n, l in enumerate(lines) if l.startswith("## ")), len(lines)):]
     for line in lines:
         if line.startswith(("    ", "\t")):
-            # Indented detail lines (as in this bot's .txt export): only the link matters.
+            # Indented detail lines (as in this bot's exports): only the link matters.
             links = find_links(line)
             if links and items and not items[-1].url:
-                link = links[0]
-                items[-1].url = link.url
-                items[-1].imdb_id = link.value if link.source == "imdb" else None
-                if link.source.startswith("youtube"):
-                    items[-1].youtube_id, items[-1].kind = link.value, "youtube"
-                elif link.hint:
-                    items[-1].kind = link.hint
+                _attach_link(items[-1], links[0])
             continue
         if m := re.match(r"^==\s*([A-Za-z ]+?)\s*(?:\(\d+\))?\s*==", line):
             section_kind = _norm_kind(m.group(1))
+            continue
+        if m := re.match(r"^#{1,6}\s+(.*)", line):
+            # Markdown heading: a section if it names a type, otherwise ignored.
+            section_kind = _norm_kind(re.sub(r"\(\d+\)", "", m.group(1))) or section_kind
             continue
         watched = bool(re.match(r"^\s*(?:[-*•]+\s*|\d+[.)]\s*)?\[[xX✓]\]", line))
         clean = _LINE_PREFIX.sub("", line).strip()
         clean = _LINE_PREFIX.sub("", clean).strip()  # e.g. "1. [x] Title"
         if not clean or clean.startswith(("#", "==")):
             continue
-        if links := find_links(clean):
+        md_url = None
+        if m := _MD_LINK.search(clean):
+            md_url = m.group(2)
+            clean = clean[: m.start()] + m.group(1) + clean[m.end():]
+        if md_url or "\\" in clean or "**" in clean:
+            clean = _MD_ESCAPE.sub(r"\1", clean.replace("**", "")).strip()
+        if not md_url and (links := find_links(clean)):
             link = links[0]
             items.append(Item(
                 title=clean.split("http")[0].strip(" -–|") or link.url,
@@ -295,6 +313,11 @@ def _from_text(text: str) -> list[Item]:
             year = int(m.group(1))
             clean = clean[: m.start()].strip()
         items.append(Item(title=clean, kind=section_kind or "movie", year=year, watched=watched))
+        if md_url:
+            if links := find_links(md_url):
+                _attach_link(items[-1], links[0])
+            else:
+                items[-1].url = md_url
     return items
 
 
@@ -324,10 +347,10 @@ def parse_file(filename: str, data: bytes) -> list[Item]:
         items: list[Item] = []
         with zipfile.ZipFile(io.BytesIO(data)) as zf:
             for member in zf.namelist():
-                if member.lower().endswith((".json", ".csv", ".txt")) and not member.startswith("__MACOSX"):
+                if member.lower().endswith((".json", ".csv", ".txt", ".md")) and not member.startswith("__MACOSX"):
                     items.extend(parse_file(member, zf.read(member)))
         if not items:
-            raise ImportFormatError("No .json/.csv/.txt watchlist found inside the zip.")
+            raise ImportFormatError("No .json/.csv/.txt/.md watchlist found inside the zip.")
         return items
     text = data.decode("utf-8-sig", errors="replace")
     if name.endswith(".json"):
@@ -339,4 +362,4 @@ def parse_file(filename: str, data: bytes) -> list[Item]:
         return _from_csv(text)
     if name.endswith((".txt", ".md")):
         return _from_text(text)
-    raise ImportFormatError("Unsupported file type. Use .json, .zip, .csv or .txt.")
+    raise ImportFormatError("Unsupported file type. Use .json, .zip, .csv, .txt or .md.")
