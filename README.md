@@ -1,4 +1,5 @@
 <p align="center"><img src="art/filmvale-banner.png" alt="Filmvale — your server's watchlist" width="680"></p>
+
 Filmvale is a self-hosted Discord bot for keeping a shared watchlist of movies, series, YouTube videos and anything else, inspired by [WatchList](https://www.watchlistbot.com/).
 
 ## Features
